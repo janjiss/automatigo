@@ -59,12 +59,14 @@ func (timerLight *TimerLight) handleOccupancy() {
 		timerLight.timer.Stop()
 	}
 
-	timerLight.turnOnLight()
-	timerLight.timer = time.AfterFunc(5*time.Minute, timerLight.turnOffLight)
+	if !isSunUp() {
+		timerLight.turnOnLight()
+		timerLight.timer = time.AfterFunc(5*time.Minute, timerLight.turnOffLight)
+	}
 }
 
 func (timerLight *TimerLight) handleNoOccupancy() {
-	if timerLight.timer == nil {
+	if timerLight.timer == nil || isSunUp() {
 		timerLight.turnOffLight()
 	}
 }
