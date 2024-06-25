@@ -84,10 +84,10 @@ func (timerLight *TimerLight) turnOnLight() {
 }
 
 func isSunUp() bool {
-	currentTime := time.Now()
+	currentTime := time.Now().UTC()
 
 	rise, set := sunrise.SunriseSunset(
-		21.95721, 56.97399,
+		56.97399, 21.95721,
 		currentTime.Year(), currentTime.Month(), currentTime.Day(),
 	)
 
