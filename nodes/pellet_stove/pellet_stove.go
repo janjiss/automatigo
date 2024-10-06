@@ -62,6 +62,8 @@ func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, 
 
 	controller.fetchDeviceInfo()
 
+	runPeriodically(15*time.Second, controller.fetchDeviceInfo, nil)
+
 	opts.OnConnect = func(c MQTT.Client) {
 		// Subscribe to temperature topic
 		if token := c.Subscribe(temperatureTopic, 0, controller.temperatureHandler); token.Wait() && token.Error() != nil {
@@ -252,4 +254,20 @@ func StartPelletStove(mqttHost string) {
 
 	controller := NewPelletStoveController(mqttHost, clientID, temperatureTopic, controlTopic, statusTopic, setpoint, margin)
 	controller.Run()
+}
+
+func runPeriodically(interval time.Duration, f func(), stop <-chan struct{}) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				f()
+			case <-stop:
+				return
+			}
+		}
+	}()
 }
