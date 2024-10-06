@@ -1,8 +1,10 @@
 package pellet_stove
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,6 +32,8 @@ type PelletStoveController struct {
 	TemperatureTopic   string
 	ControlTopic       string
 	StatusTopic        string // New field for stove status topic
+	MasterSwitchOn     bool
+	HTTPClient         *http.Client
 }
 
 // NewPelletStoveController initializes a new controller instance.
@@ -52,7 +56,11 @@ func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, 
 		TemperatureMargin:  margin,
 		TemperatureTopic:   temperatureTopic,
 		ControlTopic:       controlTopic,
+		MasterSwitchOn:     false,
+		HTTPClient:         &http.Client{Timeout: 10 * time.Second},
 	}
+
+	controller.fetchDeviceInfo()
 
 	opts.OnConnect = func(c MQTT.Client) {
 		// Subscribe to temperature topic
@@ -93,6 +101,7 @@ func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, 
 }
 
 func (p *PelletStoveController) statusHandler(client MQTT.Client, msg MQTT.Message) {
+	p.fetchDeviceInfo()
 	var payload map[string]interface{}
 	err := json.Unmarshal(msg.Payload(), &payload)
 
@@ -125,6 +134,7 @@ func (p *PelletStoveController) Run() {
 }
 
 func (p *PelletStoveController) temperatureHandler(client MQTT.Client, msg MQTT.Message) {
+	p.fetchDeviceInfo()
 	var payload map[string]interface{}
 	err := json.Unmarshal(msg.Payload(), &payload)
 	if err != nil {
@@ -139,12 +149,68 @@ func (p *PelletStoveController) temperatureHandler(client MQTT.Client, msg MQTT.
 	p.ControlPelletStove()
 }
 
+func (p *PelletStoveController) fetchDeviceInfo() {
+	var request struct {
+		Temperature float64 `json:"temperature"`
+		StoveOn     bool    `json:"stove_one"`
+	}
+
+	request.Temperature = p.CurrentTemperature
+	request.StoveOn = p.StoveOn
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	req, err := http.NewRequest("POST", "https://app.janis.wtf/api/device", bytes.NewBuffer(body))
+	if err != nil {
+		fmt.Printf("Error creating request: %v\n", err)
+		return
+	}
+
+	// Add basic auth credentials to the request
+	req.SetBasicAuth("janis", "sapkaja21")
+	req.Header.Set("Content-Type", "application/json")
+	req.Body.Close()
+
+	resp, err := p.HTTPClient.Do(req)
+	if err != nil {
+		fmt.Printf("Error fetching temperature: %v\n", err)
+		return
+	}
+
+	var result struct {
+		DesiredTemperature float64 `json:"desired_temperature"`
+		On                 bool    `json:"on"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		fmt.Printf("Error decoding temperature response: %v\n", err)
+		return
+	}
+
+	p.Setpoint = result.DesiredTemperature
+	p.MasterSwitchOn = result.On
+
+	fmt.Printf("Received temperature from server: %.2f°C\n", result.DesiredTemperature)
+}
+
 func (p *PelletStoveController) ControlPelletStove() {
 	if !p.TemperatureKnown || !p.StoveStateKnown {
-		// Don't proceed if we don't know the temperature or stove state
 		fmt.Println("Waiting for temperature and stove state information...")
 		return
 	}
+
+	if !p.MasterSwitchOn {
+		if p.StoveOn {
+			p.turnStoveOff()
+		}
+		fmt.Println("Master switch is off, not controlling stove")
+		return
+	}
+
 	if p.CurrentTemperature < (p.Setpoint-p.TemperatureMargin) && !p.StoveOn {
 		p.turnStoveOn()
 	} else if p.CurrentTemperature > (p.Setpoint+p.TemperatureMargin) && p.StoveOn {
