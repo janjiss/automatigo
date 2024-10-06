@@ -62,7 +62,10 @@ func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, 
 
 	controller.fetchDeviceInfo()
 
-	runPeriodically(15*time.Second, controller.fetchDeviceInfo, nil)
+	runPeriodically(15*time.Second, func() {
+		controller.fetchDeviceInfo()
+		controller.ControlPelletStove()
+	}, nil)
 
 	opts.OnConnect = func(c MQTT.Client) {
 		// Subscribe to temperature topic
@@ -103,7 +106,6 @@ func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, 
 }
 
 func (p *PelletStoveController) statusHandler(client MQTT.Client, msg MQTT.Message) {
-	p.fetchDeviceInfo()
 	var payload map[string]interface{}
 	err := json.Unmarshal(msg.Payload(), &payload)
 
@@ -124,6 +126,7 @@ func (p *PelletStoveController) statusHandler(client MQTT.Client, msg MQTT.Messa
 		fmt.Printf("Received unknown stove status: %s\n", signal)
 	}
 	fmt.Printf("Stove status updated: %s\n", signal)
+	p.ControlPelletStove()
 }
 
 // Run starts the controller and waits for termination signals.
@@ -136,7 +139,6 @@ func (p *PelletStoveController) Run() {
 }
 
 func (p *PelletStoveController) temperatureHandler(client MQTT.Client, msg MQTT.Message) {
-	p.fetchDeviceInfo()
 	var payload map[string]interface{}
 	err := json.Unmarshal(msg.Payload(), &payload)
 	if err != nil {
