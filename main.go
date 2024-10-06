@@ -1,15 +1,21 @@
 package main
 
 import (
-	env "github.com/Netflix/go-env"
-	"github.com/eclipse/paho.mqtt.golang"
+	"github.com/Netflix/go-env"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"janjiss.com/automatigo/nodes/on_off"
+	"janjiss.com/automatigo/nodes/pellet_stove"
 	"janjiss.com/automatigo/nodes/timer_light"
 )
 
 type Environment struct {
-	MqttHost string `env:"MQTT_HOST"`
-	ClientId string `env:"CLIENT_ID"`
+	MqttHost              string  `env:"MQTT_HOST"`
+	ClientId              string  `env:"CLIENT_ID"`
+	TemperatureTopic      string  `env:"TEMPERATURE_TOPIC"`
+	PelletStoveRelayTopic string  `env:"PELLET_STOVE_RELAY_TOPIC"`
+	TargetTemperature     float64 `env:"TARGET_TEMPERATURE"`
+	Hysteresis            float64 `env:"HYSTERESIS"`
+	MinRuntime            int     `env:"MIN_RUNTIME_MINUTES"`
 }
 
 func startPatioLight(client mqtt.Client) {
@@ -85,5 +91,5 @@ func main() {
 	go startDirtyRoomSocket(client)
 	go startLivingRoomSocket(client)
 
-	select {}
+	pellet_stove.StartPelletStove(environment.MqttHost)
 }
