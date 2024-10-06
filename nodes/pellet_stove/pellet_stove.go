@@ -152,7 +152,7 @@ func (p *PelletStoveController) temperatureHandler(client MQTT.Client, msg MQTT.
 func (p *PelletStoveController) fetchDeviceInfo() {
 	var request struct {
 		Temperature float64 `json:"temperature"`
-		StoveOn     bool    `json:"stove_one"`
+		StoveOn     bool    `json:"stove_on"`
 	}
 
 	request.Temperature = p.CurrentTemperature
