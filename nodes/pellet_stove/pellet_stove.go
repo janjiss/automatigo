@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
@@ -34,8 +35,13 @@ type PelletStoveController struct {
 // NewPelletStoveController initializes a new controller instance.
 func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, statusTopic string, setpoint, margin float64) *PelletStoveController {
 	opts := MQTT.NewClientOptions().AddBroker(broker)
-	opts.KeepAlive = 0
 	opts.SetClientID(clientID)
+	opts.SetKeepAlive(60 * time.Second)
+	opts.SetPingTimeout(10 * time.Second)
+	opts.SetAutoReconnect(true)
+	opts.SetCleanSession(true) // Set to true unless you have a reason not to
+	opts.SetConnectRetry(true)
+	opts.SetConnectRetryInterval(10 * time.Second)
 
 	controller := &PelletStoveController{
 		CurrentTemperature: 0.0,
@@ -54,7 +60,6 @@ func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, 
 			fmt.Printf("Error subscribing to topic %s: %v\n", temperatureTopic, token.Error())
 			os.Exit(1)
 		}
-		c.Publish(temperatureTopic+"/get", 0, false, `{"temperature": ""}`)
 		fmt.Printf("Subscribed to temperature topic %s\n", temperatureTopic)
 
 		// Subscribe to status topic if provided
@@ -68,6 +73,10 @@ func NewPelletStoveController(broker, clientID, temperatureTopic, controlTopic, 
 			c.Publish(controlTopic+"/get", 0, false, `{"power_on_behavior": ""}`)
 			fmt.Printf("Subscribed to status topic %s\n", controlTopic)
 		}
+	}
+
+	opts.OnConnectionLost = func(client MQTT.Client, err error) {
+		fmt.Printf("Connection lost: %v\n", err)
 	}
 
 	mqttClient := MQTT.NewClient(opts)
