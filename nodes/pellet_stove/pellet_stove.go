@@ -116,10 +116,10 @@ func (p *PelletStoveController) statusHandler(client MQTT.Client, msg MQTT.Messa
 	}
 
 	switch signal {
-	case "ON":
+	case "OFF":
 		p.StoveOn = true
 		p.StoveStateKnown = true
-	case "OFF":
+	case "ON":
 		p.StoveOn = false
 		p.StoveStateKnown = true
 	default:
