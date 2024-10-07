@@ -248,10 +248,10 @@ func (p *PelletStoveController) publishControlCommand(command string) {
 
 func StartPelletStove(mqttHost string) {
 	clientID := "PelletStoveController"
-	temperatureTopic := "zigbee2mqtt/living-room-temp"
+	temperatureTopic := "zigbee2mqtt/kitchen-temp"
 	controlTopic := "zigbee2mqtt/pellet-stove"
 	statusTopic := "zigbee2mqtt/pellet-stove/get"
-	setpoint := 21.0 // Desired temperature in Celsius
+	setpoint := 21.5 // Desired temperature in Celsius
 	margin := 0.5    // Temperature margin for hysteresis
 
 	controller := NewPelletStoveController(mqttHost, clientID, temperatureTopic, controlTopic, statusTopic, setpoint, margin)
