@@ -116,16 +116,16 @@ func (p *PelletStoveController) statusHandler(client MQTT.Client, msg MQTT.Messa
 	}
 
 	switch signal {
-	case "OFF":
+	case "ON":
 		p.StoveOn = true
 		p.StoveStateKnown = true
-	case "ON":
+	case "OFF":
 		p.StoveOn = false
 		p.StoveStateKnown = true
 	default:
 		fmt.Printf("Received unknown stove status: %s\n", signal)
 	}
-	fmt.Printf("Stove status updated: %v\n", p.StoveOn)
+	fmt.Printf("Stove status updated: %s\n", signal)
 	p.ControlPelletStove()
 }
 
@@ -226,14 +226,14 @@ func (p *PelletStoveController) ControlPelletStove() {
 
 func (p *PelletStoveController) turnStoveOn() {
 	fmt.Println("Turning pellet stove ON")
-	p.publishControlCommand(`{"state": "off"}`) // Inverted due to switch polarity
+	p.publishControlCommand(`{"state": "on"}`)
 	p.StoveOn = true
 	p.StoveStateKnown = true
 }
 
 func (p *PelletStoveController) turnStoveOff() {
 	fmt.Println("Turning pellet stove OFF")
-	p.publishControlCommand(`{"state": "on"}`) // Inverted tue to switch polarity
+	p.publishControlCommand(`{"state": "off"}`)
 	p.StoveOn = false
 	p.StoveStateKnown = true
 }
