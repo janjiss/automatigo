@@ -125,7 +125,7 @@ func (p *PelletStoveController) statusHandler(client MQTT.Client, msg MQTT.Messa
 	default:
 		fmt.Printf("Received unknown stove status: %s\n", signal)
 	}
-	fmt.Printf("Stove status updated: %s\n", signal)
+	fmt.Printf("Stove status updated: %v\n", p.StoveOn)
 	p.ControlPelletStove()
 }
 
