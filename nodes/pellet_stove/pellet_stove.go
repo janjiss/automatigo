@@ -226,14 +226,14 @@ func (p *PelletStoveController) ControlPelletStove() {
 
 func (p *PelletStoveController) turnStoveOn() {
 	fmt.Println("Turning pellet stove ON")
-	p.publishControlCommand(`{"state": "on"}`)
+	p.publishControlCommand(`{"state": "off"}`) // Inverted due to switch polarity
 	p.StoveOn = true
 	p.StoveStateKnown = true
 }
 
 func (p *PelletStoveController) turnStoveOff() {
 	fmt.Println("Turning pellet stove OFF")
-	p.publishControlCommand(`{"state": "off"}`)
+	p.publishControlCommand(`{"state": "on"}`) // Inverted tue to switch polarity
 	p.StoveOn = false
 	p.StoveStateKnown = true
 }
@@ -249,8 +249,8 @@ func (p *PelletStoveController) publishControlCommand(command string) {
 func StartPelletStove(mqttHost string) {
 	clientID := "PelletStoveController"
 	temperatureTopic := "zigbee2mqtt/living-room-temp"
-	controlTopic := "zigbee2mqtt/dirty-room-outlet"
-	statusTopic := "zigbee2mqtt/dirty-room-outlet/get"
+	controlTopic := "zigbee2mqtt/pellet-stove"
+	statusTopic := "zigbee2mqtt/pellet-stove/get"
 	setpoint := 21.0 // Desired temperature in Celsius
 	margin := 0.5    // Temperature margin for hysteresis
 
