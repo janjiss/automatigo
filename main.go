@@ -4,7 +4,6 @@ import (
 	"github.com/Netflix/go-env"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"janjiss.com/automatigo/nodes/on_off"
-	"janjiss.com/automatigo/nodes/pellet_stove"
 	"janjiss.com/automatigo/nodes/timer_light"
 )
 
@@ -91,5 +90,5 @@ func main() {
 	go startDirtyRoomSocket(client)
 	go startLivingRoomSocket(client)
 
-	pellet_stove.StartPelletStove(environment.MqttHost)
+	select {}
 }
